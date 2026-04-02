@@ -1,183 +1,388 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>LLM Chat App</title>
-		<style>
-			:root {
-				--primary-color: #f6821f;
-				--primary-hover: #e67e22;
-				--light-bg: #f9fafb;
-				--border-color: #e5e7eb;
-				--text-color: #1f2937;
-				--text-light: #6b7280;
-				--user-msg-bg: #fff2e6;
-				--assistant-msg-bg: #f3f4f6;
-			}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alakh GPT - Enterprise</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Custom PW Enterprise Theme */
+        .bg-pw-blue { background-color: #1a233a; }
+        .text-pw-blue { color: #1a233a; }
+        .bg-pw-orange { background-color: #f06a25; }
+        .text-pw-orange { color: #f06a25; }
+        .border-pw-orange { border-color: #f06a25; }
+        .bg-pw-sidebar { background-color: #111827; }
 
-			* {
-				box-sizing: border-box;
-				margin: 0;
-				padding: 0;
-			}
+        /* Splash Animations */
+        @keyframes popUp {
+            0% { transform: translateY(150%); opacity: 0; }
+            70% { transform: translateY(-5%); opacity: 1; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        .animate-pop-up { animation: popUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        
+        @keyframes pulseLogo {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .animate-pulse-logo { animation: pulseLogo 2.5s infinite ease-in-out; }
 
-			body {
-				font-family:
-					-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
-					Cantarell, sans-serif;
-				line-height: 1.6;
-				color: var(--text-color);
-				max-width: 800px;
-				margin: 0 auto;
-				padding: 1rem;
-			}
+        .fade-out {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease-out, visibility 0.8s;
+        }
+        
+        .fade-in { animation: fadeIn 0.8s ease-in forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-			header {
-				text-align: center;
-				margin-bottom: 2rem;
-				padding: 1rem 0;
-				border-bottom: 1px solid var(--border-color);
-			}
+        /* Enterprise UI specific */
+        .message-row { transition: background-color 0.2s ease; }
+        .message-row:hover { background-color: #f8fafc; }
+        .bot-message-bg { background-color: #f1f5f9; }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Loader */
+        .dot-flashing {
+            position: relative;
+            width: 6px; height: 6px;
+            border-radius: 5px;
+            background-color: #f06a25;
+            color: #f06a25;
+            animation: dot-flashing 1s infinite linear alternate;
+            animation-delay: 0.5s;
+        }
+        .dot-flashing::before, .dot-flashing::after {
+            content: '';
+            display: inline-block;
+            position: absolute;
+            top: 0;
+        }
+        .dot-flashing::before {
+            left: -12px;
+            width: 6px; height: 6px;
+            border-radius: 5px;
+            background-color: #f06a25;
+            color: #f06a25;
+            animation: dot-flashing 1s infinite alternate;
+            animation-delay: 0s;
+        }
+        .dot-flashing::after {
+            left: 12px;
+            width: 6px; height: 6px;
+            border-radius: 5px;
+            background-color: #f06a25;
+            color: #f06a25;
+            animation: dot-flashing 1s infinite alternate;
+            animation-delay: 1s;
+        }
+        @keyframes dot-flashing {
+            0% { background-color: #f06a25; }
+            50%, 100% { background-color: rgba(240, 106, 37, 0.2); }
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden bg-white text-gray-800 flex">
 
-			h1 {
-				font-size: 1.5rem;
-				color: var(--primary-color);
-			}
+    <!-- SPLASH SCREEN -->
+    <div id="splash-screen" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white shadow-2xl transition-all">
+        <div class="flex-1 flex items-center justify-center flex-col mt-20">
+            <img src="http://googleusercontent.com/image_generation_content/3" alt="Logo" class="w-64 h-64 md:w-80 md:h-80 object-contain rounded-2xl animate-pulse-logo">
+        </div>
+        <div class="relative w-full flex justify-center h-48 sm:h-64 overflow-hidden">
+            <img id="alakh-image" src="http://googleusercontent.com/image_generation_content/4" alt="Alakh Sir" class="absolute bottom-0 w-48 h-48 sm:w-64 sm:h-64 object-cover rounded-t-full border-4 border-pw-orange shadow-2xl opacity-0 translate-y-full">
+        </div>
+        <div class="w-full text-center py-6 bg-white z-10 border-t border-gray-100">
+            <p class="text-sm md:text-base font-semibold text-gray-500 tracking-wide uppercase">
+                made with ❤️ inspired by alakh pandey
+            </p>
+        </div>
+    </div>
 
-			.chat-container {
-				display: flex;
-				flex-direction: column;
-				height: calc(100vh - 200px);
-				min-height: 400px;
-				border: 1px solid var(--border-color);
-				border-radius: 8px;
-				overflow: hidden;
-			}
+    <!-- ENTERPRISE CHAT UI (Hidden initially) -->
+    <div id="chat-ui" class="hidden w-full h-full flex-row fade-in bg-white">
+        
+        <!-- Sidebar (Desktop) -->
+        <aside class="hidden md:flex flex-col w-72 bg-pw-sidebar text-gray-300 transition-all duration-300">
+            <div class="p-4 flex items-center gap-3 border-b border-gray-800">
+                <img src="http://googleusercontent.com/image_generation_content/3" alt="Logo" class="w-8 h-8 object-cover rounded shadow-sm bg-white p-0.5">
+                <span class="font-semibold text-white tracking-wide">Alakh GPT <span class="text-[10px] bg-pw-orange text-white px-1.5 py-0.5 rounded ml-1">PRO</span></span>
+            </div>
+            
+            <div class="p-3">
+                <button class="w-full flex items-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-lg border border-gray-700 transition-colors text-sm font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                    New Session
+                </button>
+            </div>
 
-			.chat-messages {
-				flex: 1;
-				overflow-y: auto;
-				padding: 1rem;
-				background-color: var(--light-bg);
-			}
+            <div class="flex-1 overflow-y-auto px-3 py-2 space-y-1">
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2 mt-4">Recent Topics</p>
+                <!-- Mock History Items -->
+                <a href="#" class="block px-3 py-2 rounded-md hover:bg-gray-800 text-sm truncate text-gray-400 hover:text-white transition-colors">Understanding Quantum Mechanics</a>
+                <a href="#" class="block px-3 py-2 rounded-md hover:bg-gray-800 text-sm truncate text-gray-400 hover:text-white transition-colors">Thermodynamics revision notes</a>
+                <a href="#" class="block px-3 py-2 rounded-md hover:bg-gray-800 text-sm truncate text-gray-400 hover:text-white transition-colors">JEE Main 2026 Strategy</a>
+            </div>
+            
+            <div class="p-4 border-t border-gray-800 flex items-center gap-3 hover:bg-gray-800 cursor-pointer transition-colors">
+                <div class="w-8 h-8 rounded-full bg-pw-orange flex items-center justify-center text-white font-bold text-sm">U</div>
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-white">Student Account</p>
+                    <p class="text-xs text-gray-500">Free Tier</p>
+                </div>
+            </div>
+        </aside>
 
-			.message {
-				margin-bottom: 1rem;
-				padding: 0.75rem;
-				border-radius: 8px;
-				max-width: 80%;
-			}
+        <!-- Main Chat Area -->
+        <main class="flex-1 flex flex-col min-w-0 bg-white">
+            <!-- Mobile Header -->
+            <header class="md:hidden flex items-center justify-between p-4 border-b border-gray-200">
+                <div class="flex items-center gap-2">
+                    <img src="http://googleusercontent.com/image_generation_content/3" alt="Logo" class="w-8 h-8 object-cover rounded shadow-sm border border-gray-200">
+                    <span class="font-semibold text-pw-blue">Alakh GPT</span>
+                </div>
+                <button class="text-gray-500"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg></button>
+            </header>
 
-			.message p {
-				white-space: pre-line;
-				margin: 0;
-				overflow-wrap: anywhere;
-			}
+            <!-- Chat Container -->
+            <div id="chat-messages" class="flex-1 overflow-y-auto pb-6">
+                <!-- Greeting -->
+                <div class="py-16 md:py-24 text-center px-4" id="welcome-screen">
+                    <div class="w-16 h-16 bg-pw-blue rounded-2xl mx-auto flex items-center justify-center shadow-lg mb-6">
+                        <img src="http://googleusercontent.com/image_generation_content/3" class="w-12 h-12 object-contain filter brightness-0 invert">
+                    </div>
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Hello Bachho!</h2>
+                    <p class="text-gray-500 max-w-md mx-auto">I'm your AI learning assistant powered by Cloudflare AI. What concept shall we master today?</p>
+                </div>
+            </div>
 
-			.user-message {
-				background-color: var(--user-msg-bg);
-				align-self: flex-end;
-				margin-left: auto;
-			}
+            <!-- Input Area -->
+            <div class="p-4 bg-gradient-to-t from-white via-white to-transparent">
+                <div class="max-w-3xl mx-auto relative">
+                    <form id="chat-form" class="relative flex items-end shadow-sm bg-white border border-gray-300 rounded-xl overflow-hidden focus-within:ring-1 focus-within:ring-pw-orange focus-within:border-pw-orange transition-all">
+                        <textarea 
+                            id="user-input" 
+                            rows="1"
+                            class="flex-1 max-h-48 bg-transparent border-none focus:ring-0 resize-none pl-4 pr-12 py-3.5 text-gray-800 text-sm md:text-base" 
+                            placeholder="Message Alakh GPT..."
+                            style="outline: none;"
+                        ></textarea>
+                        <div class="absolute right-2 bottom-2">
+                            <button type="submit" id="send-btn" class="bg-pw-blue hover:bg-pw-orange text-white p-2 rounded-lg transition-colors disabled:opacity-50 disabled:bg-gray-300 flex items-center justify-center group">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-5 md:w-5 transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19V6m0 0l-8 8m8-8l8 8" />
+                                </svg>
+                            </button>
+                        </div>
+                    </form>
+                    <div class="text-center mt-3">
+                        <p class="text-xs text-gray-400 font-medium">Alakh GPT uses Cloudflare AI endpoints. Responses may contain inaccuracies.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
 
-			.assistant-message {
-				background-color: var(--assistant-msg-bg);
-				align-self: flex-start;
-			}
+    <script>
+        // --- CHAT HISTORY STATE ---
+        let chatHistory = [];
+        
+        // --- SPLASH SCREEN LOGIC ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const splashScreen = document.getElementById('splash-screen');
+            const alakhImage = document.getElementById('alakh-image');
+            const chatUi = document.getElementById('chat-ui');
+            const userInput = document.getElementById('user-input');
 
-			.message-input {
-				display: flex;
-				padding: 0.75rem;
-				border-top: 1px solid var(--border-color);
-				background-color: white;
-			}
+            setTimeout(() => { alakhImage.classList.add('animate-pop-up'); }, 1500);
 
-			#user-input {
-				flex: 1;
-				padding: 0.75rem;
-				border: 1px solid var(--border-color);
-				border-radius: 4px;
-				font-family: inherit;
-				resize: none;
-				min-height: 44px;
-			}
+            setTimeout(() => {
+                splashScreen.classList.add('fade-out');
+                setTimeout(() => {
+                    splashScreen.style.display = 'none';
+                    chatUi.classList.remove('hidden');
+                    userInput.focus();
+                }, 800); 
+            }, 3500);
 
-			#send-button {
-				margin-left: 0.5rem;
-				padding: 0 1rem;
-				background-color: var(--primary-color);
-				color: white;
-				border: none;
-				border-radius: 4px;
-				cursor: pointer;
-				transition: background-color 0.2s;
-			}
+            // Auto-resize textarea
+            userInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight < 200 ? this.scrollHeight : 200) + 'px';
+            });
 
-			#send-button:hover {
-				background-color: var(--primary-hover);
-			}
+            // Submit on Enter
+            userInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    document.getElementById('chat-form').dispatchEvent(new Event('submit'));
+                }
+            });
+        });
 
-			#send-button:disabled {
-				background-color: var(--text-light);
-				cursor: not-allowed;
-			}
+        // --- ENTERPRISE CHAT LOGIC ---
+        const chatMessages = document.getElementById('chat-messages');
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const welcomeScreen = document.getElementById('welcome-screen');
 
-			.typing-indicator {
-				display: none;
-				font-style: italic;
-				color: var(--text-light);
-				padding: 1rem;
-			}
+        function createMessageRow(role, content = '') {
+            const row = document.createElement('div');
+            row.className = `message-row py-6 px-4 md:px-8 border-b border-gray-100 ${role === 'bot' ? 'bot-message-bg' : 'bg-white'}`;
+            
+            const container = document.createElement('div');
+            container.className = 'max-w-3xl mx-auto flex gap-4 md:gap-6';
 
-			.typing-indicator.visible {
-				display: block;
-			}
+            // Avatar
+            const avatar = document.createElement('div');
+            avatar.className = 'flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-white font-bold shadow-sm';
+            if (role === 'user') {
+                avatar.className += ' bg-pw-blue';
+                avatar.innerHTML = 'U';
+            } else {
+                avatar.className += ' bg-white border border-gray-200';
+                avatar.innerHTML = `<img src="http://googleusercontent.com/image_generation_content/3" class="w-full h-full object-cover rounded-full p-0.5">`;
+            }
 
-			footer {
-				margin-top: 1rem;
-				text-align: center;
-				font-size: 0.85rem;
-				color: var(--text-light);
-			}
-		</style>
-	</head>
-	<body>
-		<header>
-			<h1>Cloudflare AI Chat</h1>
-			<p>Powered by Cloudflare Workers AI</p>
-		</header>
+            // Content
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'flex-1 prose prose-sm md:prose-base prose-slate max-w-none pt-1';
+            
+            // Name label
+            const nameLabel = document.createElement('div');
+            nameLabel.className = 'font-bold text-gray-800 text-sm mb-1';
+            nameLabel.innerText = role === 'user' ? 'You' : 'Alakh GPT';
+            contentDiv.appendChild(nameLabel);
 
-		<div class="chat-container">
-			<div id="chat-messages" class="chat-messages">
-				<div class="message assistant-message">
-					<p>
-						Hello! I'm an LLM chat app powered by Cloudflare Workers AI. How can
-						I help you today?
-					</p>
-				</div>
-			</div>
+            const textSpan = document.createElement('div');
+            textSpan.className = 'message-text text-gray-700 leading-relaxed whitespace-pre-wrap';
+            textSpan.innerHTML = content;
+            contentDiv.appendChild(textSpan);
 
-			<div class="typing-indicator" id="typing-indicator">
-				AI is thinking...
-			</div>
+            container.appendChild(avatar);
+            container.appendChild(contentDiv);
+            row.appendChild(container);
+            
+            return row;
+        }
 
-			<div class="message-input">
-				<textarea
-					id="user-input"
-					placeholder="Type your message here..."
-					rows="1"
-					autofocus
-				></textarea>
-				<button id="send-button">Send</button>
-			</div>
-		</div>
+        function addLoader() {
+            const row = document.createElement('div');
+            row.id = 'typing-indicator';
+            row.className = 'message-row py-6 px-4 md:px-8 border-b border-gray-100 bot-message-bg';
+            row.innerHTML = `
+                <div class="max-w-3xl mx-auto flex gap-4 md:gap-6 items-start">
+                    <div class="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-sm">
+                        <img src="http://googleusercontent.com/image_generation_content/3" class="w-full h-full object-cover rounded-full p-0.5">
+                    </div>
+                    <div class="flex-1 pt-3">
+                        <div class="dot-flashing ml-3"></div>
+                    </div>
+                </div>
+            `;
+            chatMessages.appendChild(row);
+            scrollToBottom();
+            return row;
+        }
 
-		<footer>
-			<p>Cloudflare Workers AI Chat Template &copy; 2025</p>
-		</footer>
+        function scrollToBottom() {
+            chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+        }
 
-		<!-- Chat app script -->
-		<script src="chat.js"></script>
-	</body>
+        async function typeText(element, text, speed = 10) {
+            element.innerHTML = '';
+            for (let i = 0; i < text.length; i++) {
+                element.innerHTML += text.charAt(i);
+                if (i % 5 === 0) scrollToBottom();
+                await new Promise(r => setTimeout(r, speed));
+            }
+        }
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // Hide Welcome Screen on first message
+            if (welcomeScreen) welcomeScreen.style.display = 'none';
+
+            // Update UI: User Message
+            chatMessages.appendChild(createMessageRow('user', message));
+            userInput.value = '';
+            userInput.style.height = 'auto';
+            scrollToBottom();
+            
+            // Disable input
+            userInput.disabled = true;
+            sendBtn.disabled = true;
+
+            const loader = addLoader();
+
+            // Update State
+            chatHistory.push({ role: 'user', content: message });
+
+            // Fetch from Cloudflare backend (/api/chat)
+            const responseText = await fetchCloudflareResponse(message);
+
+            // Update State
+            chatHistory.push({ role: 'assistant', content: responseText });
+
+            // Update UI: Bot Message
+            loader.remove();
+            const botRow = createMessageRow('bot');
+            chatMessages.appendChild(botRow);
+            const textElement = botRow.querySelector('.message-text');
+            
+            // Simple markdown parsing (bold)
+            const formattedText = responseText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            await typeText(textElement, formattedText, 10);
+            
+            // Re-enable input
+            userInput.disabled = false;
+            sendBtn.disabled = false;
+            userInput.focus();
+            scrollToBottom();
+        });
+
+        // --- API INTEGRATION (CLOUDFLARE WORKER ROUTE) ---
+        async function fetchCloudflareResponse(userText) {
+            try {
+                // Calls the local route configured in your wrangler.jsonc/src/index.ts
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    // Sending the standard OpenAI/Cloudflare format
+                    body: JSON.stringify({ messages: chatHistory })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server responded with ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Handles different standard response shapes (OpenAI standard or direct text)
+                if (data.response) return data.response;
+                if (data.choices && data.choices[0].message) return data.choices[0].message.content;
+                
+                return "Arre beta, server se ajeeb response aaya hai. Phir se try karo!";
+
+            } catch (error) {
+                console.error("API Route Error:", error);
+                return "**Connection Error:** Lagta hai server se connection toot gaya beta. Please check if your Cloudflare worker is running locally or deployed correctly!";
+            }
+        }
+    </script>
+</body>
 </html>
